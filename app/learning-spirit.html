@@ -491,7 +491,9 @@ const RAW = {
 };
 // 各類輪流排列，模擬依詞頻出新字
 const WORDS = [];
-{ const keys = Object.keys(RAW); for (let i = 0; i < 10; i++) for (const k of keys) { const r = RAW[k][i]; if (r) WORDS.push({ w: r[0], zh: r[1], cat: k, s: r[2], sz: r[3] }); } }
+// 詞性：5 個名詞類別都是名詞；通用類是動詞和形容詞
+const POS_OF = { go: '動詞', make: '動詞', know: '動詞', think: '動詞', help: '動詞', important: '形容詞', happy: '形容詞', big: '形容詞', new: '形容詞', small: '形容詞' };
+{ const keys = Object.keys(RAW); for (let i = 0; i < 10; i++) for (const k of keys) { const r = RAW[k][i]; if (r) WORDS.push({ w: r[0], zh: r[1], cat: k, s: r[2], sz: r[3], pos: POS_OF[r[0]] || '名詞' }); } }
 const WMAP = Object.fromEntries(WORDS.map(x => [x.w, x]));
 const catTotal = cat => WORDS.filter(x => x.cat === cat).length;
 
@@ -539,10 +541,11 @@ const catTag = c => `<span class="cat" style="background:${CATS[c].color}">${CAT
 // ---------- 狀態與存檔 ----------
 const KEY = 'learning-spirit-demo-v1';
 let S = null;
-function freshDaily() { return { points: 0, correct: 0, battles: 0, bonus: 0, quizDone: false, quizSnooze: 0, extraCount: 0, extraLast: Date.now() }; }
+function freshDaily() { return { points: 0, correct: 0, battles: 0, bonus: 0, quizDone: false, quizLater: false, extraCount: 0, extraLast: Date.now() }; }
 function freshState() {
   return { demo: true, day: today(), daily: freshDaily(), words: {}, wrongBank: [], forced: 0, forcedEndSize: 0,
-           pets: [], eggs: [], nextId: 1, extraPet: null, score: 0, lastPractice: Date.now(), battleLog: [], seed: Math.floor(Math.random() * 1e9) };
+           pets: [], eggs: [], nextId: 1, extraPet: null, score: 0, lastPractice: Date.now(), battleLog: [], seed: Math.floor(Math.random() * 1e9),
+           nick: '玩家', pure: false, consent: false, records: [] };
 }
 function load() { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {} return null; }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
@@ -606,7 +609,7 @@ function buildQ(w) {
   q.answer = W[f];
   return q;
 }
-function setQ(w) { sess.q = buildQ(w); sess.answered = false; sess.lastWord = w; sess.result = null; }
+function setQ(w) { sess.q = buildQ(w); sess.answered = false; sess.lastWord = w; sess.result = null; sess.shownAt = Date.now(); }
 function pickNormal() {
   const seen = WORDS.filter(x => S.words[x.w] && S.words[x.w].seen && S.words[x.w].m < 3 && x.w !== sess.lastWord);
   const unseen = WORDS.filter(x => !(S.words[x.w] && S.words[x.w].seen));
@@ -614,7 +617,8 @@ function pickNormal() {
   if (unseen.length) return unseen[0].w;
   return pick(WORDS.filter(x => x.w !== sess.lastWord)).w;
 }
-function pickWrong() { const c = S.wrongBank.filter(w => w !== sess.lastWord); return pick(c.length ? c : S.wrongBank); }
+// 錯題依預測答對機率由低到高出題（避免連續出同一個字）
+function pickWrong() { const c = S.wrongBank.filter(w => w !== sess.lastWord); return (c.length ? c : S.wrongBank).slice().sort((a, b) => (recallP(a) ?? 0) - (recallP(b) ?? 0))[0]; }
 
 function nextQ() {
   if (sess.mode === 'daily' || sess.mode === 'extra') {
@@ -661,19 +665,23 @@ function submit(ans) {
 function record(q, ok) {
   const W = WMAP[q.word], now = Date.now();
   const r = S.words[q.word] || (S.words[q.word] = { seen: 0, correct: 0, wrong: 0, last: 0, m: 0, learned: false });
+  // 作答紀錄（正式版存進 answer_records；同意上傳的測試者會匿名上傳）
+  S.records.push({ t: now, word: q.word, type: q.type, ok, mode: sess.mode, sec: Math.round((now - (sess.shownAt || now)) / 100) / 10, ver: S.pure ? 'practice' : 'pet' });
   r.seen++; r.last = now; S.lastPractice = now;
   const out = { gain: 0, capped: false, egg: null, hatched: [] };
   if (ok) {
     r.correct++; r.m = Math.min(3, r.m + 1); if (r.m >= 2) r.learned = true;
     S.wrongBank = S.wrongBank.filter(w => w !== q.word);                      // 答對 1 次移出錯題
+    S.daily.correct++;
+    S.daily.bonus = Math.min(CFG.BATTLE_BONUS_MAX, Math.floor(S.daily.correct / CFG.BATTLE_PER_CORRECT));
+  }
+  if (ok && !S.pure) {                                                        // 純練習版沒有寵物、蛋、對戰
     const pts = q.type === 'spell' ? CFG.PTS_SPELL : CFG.PTS_CHOICE;
     const counted = sess.mode === 'normal' || sess.mode === 'forced';         // 抽考、額外題不計入每日上限
     let g = pts;
     if (counted) { g = Math.max(0, Math.min(pts, CFG.DAILY_CAP - S.daily.points)); S.daily.points += g; out.capped = g < pts; }
     deskPets().forEach(p => p.xp += g);                                        // 桌面每隻都拿全額
     out.gain = g;
-    S.daily.correct++;
-    S.daily.bonus = Math.min(CFG.BATTLE_BONUS_MAX, Math.floor(S.daily.correct / CFG.BATTLE_PER_CORRECT));
     // 孵蛋進度
     for (const e of S.eggs) e.prog++;
     for (const e of S.eggs.filter(e => e.prog >= e.need)) {
@@ -684,7 +692,7 @@ function record(q, ok) {
     S.eggs = S.eggs.filter(e => e.prog < e.need);
     // 掉蛋：答對哪一類就掉哪一類
     if (Math.random() < rule('EGG_RATE')) { const e = { cat: W.cat, prog: 0, need: rule('HATCH_NEED') }; S.eggs.push(e); out.egg = e; }
-  } else {
+  } else if (!ok) {
     r.wrong++; r.m = Math.max(0, r.m - 1);
     if (!S.wrongBank.includes(q.word)) S.wrongBank.push(q.word);              // 答錯 1 次進入錯題
   }
@@ -700,11 +708,14 @@ function renderBanner() {
   const el = $('#dailyBanner');
   const eligible = WORDS.some(x => S.words[x.w] && S.words[x.w].correct > 0);
   if (S.daily.quizDone || !eligible || sess.mode === 'daily') { el.innerHTML = ''; return; }
-  if (Date.now() < S.daily.quizSnooze) { el.innerHTML = `<div class="muted" style="margin-bottom:10px">📋 今日抽考已延後，${new Date(S.daily.quizSnooze).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 後再提醒</div>`; return; }
+  if (S.daily.quizLater) {
+    el.innerHTML = `<div style="margin-bottom:10px"><button class="btn warn" id="bDaily">📋 今日抽考（尚未完成）</button> <span class="muted">今天任何時間都可以回來考，沒考完會一直留在這裡</span></div>`;
+    $('#bDaily').onclick = startDaily; return;
+  }
   el.innerHTML = `<div class="banner"><div><b>📋 今日抽考</b>　抽考你答對過、快忘記的字，最多 ${CFG.DAILY_QUIZ_N} 題。獎勵不計入每日上限。可以延後，不能跳過。</div>
-    <div style="display:flex;gap:8px"><button class="btn warn" id="bDaily">開始抽考</button><button class="btn alt" id="bSnooze">延後 30 分鐘</button></div></div>`;
+    <div style="display:flex;gap:8px"><button class="btn warn" id="bDaily">開始抽考</button><button class="btn alt" id="bSnooze">稍後再考</button></div></div>`;
   $('#bDaily').onclick = startDaily;
-  $('#bSnooze').onclick = () => { S.daily.quizSnooze = Date.now() + 30 * 60e3; save(); renderBanner(); };
+  $('#bSnooze').onclick = () => { S.daily.quizLater = true; save(); renderBanner(); };
 }
 function renderQuiz() {
   renderBanner();
@@ -720,7 +731,7 @@ function renderQuiz() {
   if (q.type === 'en2zh') body = `<div class="prompt">${esc(W.w)}</div><div class="sub">選出正確的中文意思</div>`;
   else if (q.type === 'zh2en') body = `<div class="prompt">${esc(W.zh)}</div><div class="sub">選出正確的英文單字</div>`;
   else if (q.type === 'cloze') body = `<div class="prompt small">${esc(W.s.replace(new RegExp('\\b' + W.w + '\\b', 'i'), '_____'))}</div><div class="sub">${esc(W.sz)}</div>`;
-  else body = `<div class="prompt">${esc(W.zh)}</div><div class="sub">拼出英文單字：${W.w[0]} ${'_ '.repeat(W.w.length - 1)}（${W.w.length} 個字母）· 例句：${esc(W.s.replace(new RegExp('\\b' + W.w + '\\b', 'i'), '_____'))}</div>`;
+  else body = `<div class="prompt">${esc(W.zh)}（${W.pos}）</div><div class="sub">拼出英文單字：${W.w[0]} ${'_ '.repeat(W.w.length - 1)}（${W.w.length} 個字母）· 例句：${esc(W.s.replace(new RegExp('\\b' + W.w + '\\b', 'i'), '_____'))}</div>`;
 
   let opts = '';
   if (q.type === 'spell') {
@@ -737,7 +748,7 @@ function renderQuiz() {
   if (R) {
     const extra = [];
     if (R.ok) {
-      extra.push(R.gain > 0 ? `桌面寵物各 +${R.gain} 經驗` : (R.capped ? '今日經驗上限已滿' : ''));
+      if (!S.pure) extra.push(R.gain > 0 ? `桌面寵物各 +${R.gain} 經驗` : (R.capped ? '今日經驗上限已滿' : ''));
       if (R.egg) extra.push(`🥚 掉了一顆${CATS[R.egg.cat].name}蛋！`);
     }
     fb = `<div class="fb ${R.ok ? 'ok' : 'no'}"><div>${R.ok ? '✅ 答對！' : `正確答案：<b>${esc(q.answer)}</b>`}　<span class="muted">${extra.filter(Boolean).join('　')}</span></div>
@@ -977,7 +988,7 @@ function boardClick(ev) {
 function renderBattleSide() {
   const list = deskPets(), snap = list.length ? teamSnapshot(list) : [];
   const bd = bonds(snap);
-  const board = [...S.leader.map(x => ({ ...x })), { n: '你', s: S.score, me: true }].sort((a, b) => b.s - a.s);
+  const board = [...S.leader.map(x => ({ ...x })), { n: S.nick + '（你）', s: S.score, me: true }].sort((a, b) => b.s - a.s);
   $('#battleSide').innerHTML = `
     <div><b>今日可對戰：${Math.max(0, battlesLeft())} 場</b> <span class="muted">（每天 ${CFG.BATTLE_BASE} 場；每答對 ${CFG.BATTLE_PER_CORRECT} 題再換 1 場，最多 +${CFG.BATTLE_BONUS_MAX}；今日已換 ${S.daily.bonus} 場）</span></div>
     <div class="tlist">${list.map(p => `<span class="tchip ${selPet === p.id ? 'sel' : ''}" data-sel="${p.id}"><span class="mini">${petImg(p, 26)}</span>${petName(p)} Lv.${level(p.xp)}</span>`).join('') || '<span class="muted">桌面上沒有寵物</span>'}</div>
@@ -1074,12 +1085,31 @@ function renderDesk() {
 function say(id, text) { sayPet = id; sayText = text; renderDesk(); clearTimeout(sayTimer); sayTimer = setTimeout(() => { sayPet = null; renderDesk(); }, 3500); }
 
 // ---------- 頂部與說明 ----------
+function applyVersion() {
+  document.querySelectorAll('#tabs [data-t="pets"], #tabs [data-t="battle"]').forEach(b => b.style.display = S.pure ? 'none' : '');
+  $('#desk').style.display = S.pure ? 'none' : '';
+  const on = document.querySelector('#tabs button.on');
+  if (S.pure && on && (on.dataset.t === 'pets' || on.dataset.t === 'battle')) switchTab('quiz');
+}
 function renderHeader() {
+  if (S.pure) { $('#hdr').innerHTML = `今日答對 <b>${S.daily.correct}</b>　·　錯題 <b>${S.wrongBank.length}</b>　·　<span style="color:#ffd58a">純練習版</span>`; return; }
   $('#hdr').innerHTML = `今日點數 <b>${S.daily.points}</b>/${CFG.DAILY_CAP}　·　今日答對 <b>${S.daily.correct}</b>　·　錯題 <b>${S.wrongBank.length}</b>　·　蛋 <b>${S.eggs.length}</b>　·　可對戰 <b>${Math.max(0, battlesLeft())}</b> 場　·　排行分數 <b>${S.score}</b>${S.demo ? '　·　<span style="color:#ffd58a">展示模式</span>' : ''}`;
+}
+// 匿名作答紀錄（欄位對應 PRD 的 answer_records）
+function exportRecords() {
+  const head = 'time,word,type,correct,mode,seconds,version';
+  const rows = S.records.map(r => [new Date(r.t).toISOString(), r.word, r.type, r.ok ? 1 : 0, r.mode, r.sec, r.ver].join(','));
+  const url = URL.createObjectURL(new Blob(['\ufeff' + [head, ...rows].join('\n')], { type: 'text/csv' }));
+  const a = document.createElement('a'); a.href = url; a.download = `answer_records_${today()}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function renderHelp() {
   $('#helpBox').innerHTML = `
     <h3 style="margin-top:0">設定</h3>
+    <div style="margin-bottom:8px">暱稱（對戰與排行榜用）：<input id="cNick" maxlength="12" value="${esc(S.nick)}" style="padding:4px 8px;border:1px solid var(--line);border-radius:6px"> <button class="btn alt" id="bNick">儲存</button></div>
+    <label class="toggle"><input type="checkbox" id="cPure" ${S.pure ? 'checked' : ''}> 純練習版（交叉實驗用：沒有寵物、蛋、對戰；做題、錯題、抽考照常）</label>
+    <label class="toggle"><input type="checkbox" id="cConsent" ${S.consent ? 'checked' : ''}> 我同意匿名提供作答紀錄做實驗分析（正式版會上傳到伺服器；原型只能匯出）</label>
+    <div style="margin:6px 0 10px"><button class="btn alt" id="bExport" ${S.consent ? '' : 'disabled'}>匯出作答紀錄（CSV，${S.records.length} 筆）</button></div>
     <label class="toggle"><input type="checkbox" id="cDemo" ${S.demo ? 'checked' : ''}> 展示模式（掉蛋率 30%、答對 3 題孵化、寵物額外題每 1 分鐘可出現一次）</label>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
       <button class="btn alt" id="bDay">模擬過了一天</button>
@@ -1089,8 +1119,9 @@ function renderHelp() {
     <h3>這個簡易版做了什麼</h3>
     <ul>
       <li><b>做題</b>：英選中 → 中選英／例句填空 → 拼字，依熟練度由易到難換題型；拼字只算第一次送出；答錯只顯示正確答案。</li>
-      <li><b>錯題題庫</b>：答錯 1 次進入、答對 1 次移出；累積 5 題時強制先練 5 題錯題。</li>
-      <li><b>每日抽考</b>：每天一次、最多 10 題，抽答對過且預測最快忘的字；可延後不能跳過。</li>
+      <li><b>錯題題庫</b>：答錯 1 次進入、答對 1 次移出；累積 5 題時強制先練 5 題錯題，依預測答對機率由低到高出題。</li>
+      <li><b>作答紀錄</b>：每一題的單字、題型、對錯、模式、作答秒數都會記錄；同意後可匯出 CSV 做實驗分析。</li>
+      <li><b>每日抽考</b>：每天一次、最多 10 題，抽答對過且預測最快忘的字；可以「稍後再考」，當天任何時間回來考，不能跳過。</li>
       <li><b>寵物額外題</b>：桌面寵物頭上出現 ❗ 時點它，做 5 題舊字；一天最多 4 次、間隔至少 2 小時；獎勵不計入每日上限。</li>
       <li><b>獎勵</b>：選擇題 10 點、拼字 15 點，桌面每隻寵物都拿全額；每天上限 300 點（抽考與額外題不計）。</li>
       <li><b>寵物</b>：12 種原創寵物（6 類各 2 種）；3 階段進化要同時達到經驗門檻和該類學會字數；個體數值 ±10%；答對有 5% 機率掉該類的蛋，再答對 10 題孵化；太久沒練習會不開心。</li>
@@ -1100,11 +1131,16 @@ function renderHelp() {
     <ul>
       <li>整個程式是單一網頁，資料存在這台瀏覽器（localStorage）；正式版是 PySide6 桌面程式＋本機 Flask，這份 HTML/CSS/JS 可以直接放進 QWebEngineView。</li>
       <li>對手由程式依你的實力產生；正式版走伺服器的「上傳隊伍、找對手、算戰鬥、排行榜」4 個 API。<code>teamSnapshot()</code> 就是要上傳的隊伍格式，<code>simulate()</code> 可以照搬到伺服器。</li>
+      <li>暱稱、純練習版、實驗資料同意都在上方設定；正式版的作答紀錄會在同意後匿名上傳伺服器，原型改成匯出 CSV。</li>
       <li>遺忘預測用半衰期公式暫代（<code>recallP()</code>），之後換成 Logistic Regression 模型。</li>
       <li>字庫只有 60 個字（每類 10 個），所以第 3 階段進化的「15 個字」暫時以該類全部字數為上限；例句為示範自寫，正式版改用 Tatoeba 並標示出處。</li>
       <li>寵物圖由程式畫成 SVG（<code>SPRITES</code>，原創造型、統一畫風），名字和技能是暫定，等團隊設計好再換。</li>
     </ul>`;
   $('#cDemo').onchange = e => { S.demo = e.target.checked; save(); renderHeader(); };
+  $('#bNick').onclick = () => { const v = $('#cNick').value.trim(); if (!v) return toast('暱稱不能空白'); S.nick = v; save(); toast('暱稱已儲存'); };
+  $('#cPure').onchange = e => { S.pure = e.target.checked; save(); renderAll(); toast(S.pure ? '已切換到純練習版' : '已切換到精靈版'); };
+  $('#cConsent').onchange = e => { S.consent = e.target.checked; save(); renderHelp(); };
+  $('#bExport').onclick = exportRecords;
   $('#bDay').onclick = () => {
     const D = 86400e3;
     for (const r of Object.values(S.words)) if (r.last) r.last -= D;
@@ -1132,6 +1168,7 @@ function toast(msg) { const d = document.createElement('div'); d.textContent = m
 function tick() {
   dailyCheck();
   const list = deskPets();
+  if (S.pure) { renderHeader(); renderBanner(); return; }
   if (!S.extraPet && list.length && S.daily.extraCount < CFG.EXTRA_MAX && Date.now() - S.daily.extraLast >= rule('EXTRA_GAP_MS')
       && WORDS.some(x => S.words[x.w] && S.words[x.w].seen)) {
     S.extraPet = pick(list).id; save(); renderDesk(); say(S.extraPet, '我身上有額外題目！點我～');
@@ -1140,10 +1177,16 @@ function tick() {
   }
   renderHeader(); renderBanner();
 }
-function renderAll() { renderHeader(); renderDesk(); const on = document.querySelector('#tabs button.on').dataset.t; switchTab(on); }
+function renderAll() { applyVersion(); renderHeader(); renderDesk(); const on = document.querySelector('#tabs button.on').dataset.t; switchTab(on); }
 
 function init() {
   S = load() || freshState();
+  // 舊存檔補上新欄位
+  if (S.nick == null) S.nick = '玩家';
+  if (S.pure == null) S.pure = false;
+  if (S.consent == null) S.consent = false;
+  if (!S.records) S.records = [];
+  if (S.daily.quizLater == null) S.daily.quizLater = false;
   if (!S.leader) S.leader = [{ n: '小安', s: 120 }, { n: 'Kevin', s: 95 }, { n: '阿哲', s: 70 }, { n: 'Mia', s: 55 }, { n: 'Yuki', s: 30 }];
   dailyCheck();
   if (!S.pets.length) { addPet(newPet('abc')); toast('👋 你的第一隻精靈「字靈」來了！答對題目讓牠長大吧'); }
