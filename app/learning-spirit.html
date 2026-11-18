@@ -148,7 +148,7 @@ const CFG = {
   PTS_CHOICE: 10, PTS_SPELL: 15, DAILY_CAP: 300,
   EGG_RATE: 0.05, HATCH_NEED: 10,
   LV_MAX: 50, XP_K: 5, XP_MUL: 1,                        // 升到 Lv.L 需要累積 5×(L−1)² 經驗（Lv.16 = 1125、Lv.36 = 6125、Lv.50 = 12005）
-  EVO_LV: [0, 16, 36], EVO_CHAL_N: 5, EVO_CHAL_PASS: 4,  // 進化：Lv.16、Lv.36 開放進化挑戰，同類 5 題答對 4 題才進化
+  EVO_LV: [0, 16, 36], EVO_CHAL_N: 5, EVO_CHAL_PASS: 5,  // 進化：Lv.16、Lv.36 開放進化挑戰，同類 5 題全部答對才進化
   DESK_MAX: 6, WRONG_TRIGGER: 5, FORCED_N: 5,
   EXTRA_MAX: 4, EXTRA_GAP_MS: 2 * 3600e3, EXTRA_N: 5,
   DAILY_QUIZ_N: 10, BATTLE_BASE: 3, BATTLE_BONUS_MAX: 3, BATTLE_PER_CORRECT: 10,
@@ -476,6 +476,7 @@ function pickWrong() { const c = S.wrongBank.filter(w => w !== sess.lastWord); r
 
 function nextQ() {
   if (sess.mode === 'daily' || sess.mode === 'extra' || sess.mode === 'evo') {
+    if (sess.mode === 'evo' && sess.idx - sess.evoOk > CFG.EVO_CHAL_N - CFG.EVO_CHAL_PASS) sess.queue = [];   // 錯太多題已不可能過關，直接結束
     if (sess.queue.length) { sess.idx++; setQ(sess.queue.shift()); return renderQuiz(); }
     if (sess.mode === 'daily') { S.daily.quizDone = true; toast('📋 今日抽考完成！'); }
     else if (sess.mode === 'extra') toast('❗ 額外題目完成！');
@@ -1004,7 +1005,7 @@ function renderHelp() {
       <li><b>每日抽考</b>：每天一次、最多 10 題，抽答對過且預測最快忘的字；可以「稍後再考」，當天任何時間回來考，不能跳過。</li>
       <li><b>寵物額外題</b>：桌面寵物頭上出現 ❗ 時點它，做 5 題舊字；一天最多 4 次、間隔至少 2 小時；獎勵不計入每日上限。</li>
       <li><b>獎勵</b>：選擇題 10 點、拼字 15 點，桌面每隻寵物都拿全額；每天上限 300 點（抽考與額外題不計）。</li>
-      <li><b>寵物</b>：12 種原創寵物（6 類各 2 種）；等級上限 Lv.50，越高級升級越慢（升到 Lv.L 要累積 5×(L−1)² 經驗）；3 階段進化：Lv.16 和 Lv.36 時開放「進化挑戰」，做 5 題該寵物同類的單字、答對 4 題就進化，失敗可以再挑戰；個體數值 ±10%；答對有 5% 機率掉該類的蛋，再答對 10 題孵化；太久沒練習會不開心。</li>
+      <li><b>寵物</b>：12 種原創寵物（6 類各 2 種）；等級上限 Lv.50，越高級升級越慢（升到 Lv.L 要累積 5×(L−1)² 經驗）；3 階段進化：Lv.16 和 Lv.36 時開放「進化挑戰」，做 5 題該寵物同類的單字、全部答對才進化，答錯一題就挑戰失敗，可以再挑戰；個體數值 ±10%；答對有 5% 機率掉該類的蛋，再答對 10 題孵化；太久沒練習會不開心。</li>
       <li><b>對戰</b>：7×8 六角格，6 對 6 自動移動、找目標、近戰或遠程攻擊，技能有冷卻，技能強度隨該類學會字數提升；同屬性 2 隻、3 隻有羈絆；每天 3 場，每答對 10 題多 1 場（最多 +3）。</li>
     </ul>
     <h3>跟正式版的差別</h3>
