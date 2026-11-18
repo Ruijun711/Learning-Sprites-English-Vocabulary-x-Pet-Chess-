@@ -20,11 +20,34 @@ section{display:none}section.on{display:block}
 .btn{border:none;background:var(--accent);color:#fff;padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit;font-size:14px}
 .btn.alt{background:#e9e1d1;color:var(--ink)}.btn.warn{background:var(--accent2)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.del{background:transparent;color:#a33;border:1px solid #e3b5b0;float:right}.btn.del:hover{background:#fbeceb}.btn.del.armed{background:#c0392b;color:#fff;border-color:#c0392b}
 .banner{background:#fff3dc;border:1px solid #f0d6a4;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .quiz{max-width:640px;margin:0 auto}
 .badges{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .badge{font-size:12px;padding:3px 9px;border-radius:99px;background:#ece4d4}
-.badge.mode-forced{background:#f7d9d5;color:#8c2a20}.badge.mode-daily{background:#fde3b8;color:#7a4a0c}.badge.mode-extra{background:#dbe8ff;color:#24467e}
+.badge.mode-forced{background:#f7d9d5;color:#8c2a20}.badge.mode-daily{background:#fde3b8;color:#7a4a0c}.badge.mode-extra{background:#dbe8ff;color:#24467e}.badge.mode-evo{background:#f3e0ff;color:#5b2a86}
+.evofx{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;overflow:hidden;
+  background:radial-gradient(circle at 50% 45%,#3a2f6b 0%,#14102a 60%,#07060f 100%);animation:evoIn .4s ease-out}
+@keyframes evoIn{from{opacity:0}}
+.evofx .rays{position:absolute;left:50%;top:45%;width:220vmax;height:220vmax;margin:-110vmax 0 0 -110vmax;opacity:0;transition:opacity 1.2s;
+  background:repeating-conic-gradient(from 0deg,rgba(255,240,190,.16) 0deg 7deg,transparent 7deg 18deg);animation:evoSpin 14s linear infinite}
+.evofx.glow .rays{opacity:1;animation-duration:5s}.evofx.done .rays{opacity:.7;animation-duration:22s}
+@keyframes evoSpin{to{transform:rotate(360deg)}}
+.evofx .halo{position:absolute;left:50%;top:45%;width:340px;height:340px;margin:-170px 0 0 -170px;border-radius:50%;opacity:0;transition:opacity 1s;
+  background:radial-gradient(circle,rgba(255,250,220,.55),rgba(255,220,140,.15) 45%,transparent 70%)}
+.evofx.glow .halo{opacity:1;animation:evoPulse .9s ease-in-out infinite}
+@keyframes evoPulse{50%{transform:scale(1.12)}}
+.evostage{position:relative;width:230px;height:230px}
+.evostage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:filter .8s}
+.evostage img.sil{filter:brightness(0) invert(1) drop-shadow(0 0 14px #fff) drop-shadow(0 0 30px #ffe08a)}
+.evostage img:not(.sil){filter:drop-shadow(0 0 18px rgba(255,230,150,.7))}
+.evotxt{position:relative;color:#fff;font-size:20px;font-weight:700;text-shadow:0 2px 8px #000;min-height:30px;text-align:center;padding:0 16px}
+.evotxt b{color:#ffd36b}
+.evodone{position:relative;font-size:16px;padding:10px 28px}
+.evoflash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.evospark{position:absolute;left:50%;top:45%;border-radius:50%;box-shadow:0 0 8px #fff;pointer-events:none}
+.btn.evo{background:linear-gradient(90deg,#8e44ad,#d9822b);animation:evoGlow 1.6s ease-in-out infinite}
+@keyframes evoGlow{50%{box-shadow:0 0 12px rgba(217,130,43,.8)}}
 .prompt{font-size:30px;font-weight:700;margin:6px 0 4px}
 .prompt.small{font-size:20px;font-weight:600;line-height:1.5}
 .sub{color:var(--muted);font-size:14px;margin-bottom:14px}
@@ -37,6 +60,8 @@ section{display:none}section.on{display:block}
 .fb{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .fb.ok{background:#e7f3ec}.fb.no{background:#fbe9e7}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+#petsBox .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:600px){#petsBox .grid{grid-template-columns:1fr}}
 .pcard{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
 .pcard .top{display:flex;gap:10px;align-items:center}
 .pcard .em{line-height:0}
@@ -122,13 +147,14 @@ const spriteSrc = (id, stage) => `${SPRITE_DIR}${id}-${stage + 1}.png`;
 const CFG = {
   PTS_CHOICE: 10, PTS_SPELL: 15, DAILY_CAP: 300,
   EGG_RATE: 0.05, HATCH_NEED: 10,
-  EVO_XP: [0, 150, 500], EVO_WORDS: [0, 5, 15],
+  LV_MAX: 50, XP_K: 5, XP_MUL: 1,                        // 升到 Lv.L 需要累積 5×(L−1)² 經驗（Lv.16 = 1125、Lv.36 = 6125、Lv.50 = 12005）
+  EVO_LV: [0, 16, 36], EVO_CHAL_N: 5, EVO_CHAL_PASS: 4,  // 進化：Lv.16、Lv.36 開放進化挑戰，同類 5 題答對 4 題才進化
   DESK_MAX: 6, WRONG_TRIGGER: 5, FORCED_N: 5,
   EXTRA_MAX: 4, EXTRA_GAP_MS: 2 * 3600e3, EXTRA_N: 5,
   DAILY_QUIZ_N: 10, BATTLE_BASE: 3, BATTLE_BONUS_MAX: 3, BATTLE_PER_CORRECT: 10,
 };
 // 展示模式：加快掉蛋、孵化、額外題目，方便現場示範
-const DEMO = { EGG_RATE: 0.3, HATCH_NEED: 3, EXTRA_GAP_MS: 60e3 };
+const DEMO = { EGG_RATE: 0.3, HATCH_NEED: 3, EXTRA_GAP_MS: 60e3, XP_MUL: 10 };
 const rule = k => (S && S.demo && k in DEMO) ? DEMO[k] : CFG[k];
 
 const CATS = {
@@ -286,7 +312,8 @@ const petImg = (p, size) => `<img src="${spriteSrc(p.sp, p.stage)}" width="${siz
 // 畫布用的精靈圖快取
 const IMG = {};
 function spriteImg(sp, stage) { const k = sp + stage; if (!IMG[k]) { IMG[k] = new Image(); IMG[k].src = spriteSrc(sp, stage); } return IMG[k]; }
-const level = xp => Math.min(50, 1 + Math.floor(xp / 50));
+const xpFor = lv => CFG.XP_K * (lv - 1) ** 2;                                   // 升到該等級需要的累積經驗
+const level = xp => Math.min(CFG.LV_MAX, 1 + Math.floor(Math.sqrt(xp / CFG.XP_K)));
 const learnedCount = cat => WORDS.filter(x => x.cat === cat && S.words[x.w] && S.words[x.w].learned).length;
 const skillPow = cat => 1 + 0.03 * learnedCount(cat);   // 技能強度隨該類學會字數提升
 function petStats(p) {
@@ -295,12 +322,113 @@ function petStats(p) {
 }
 function evoReq(p) {
   if (p.stage >= 2) return null;
-  const s = p.stage + 1, cat = SP[p.sp].cat;
-  return { xpNeed: CFG.EVO_XP[s], wordNeed: Math.min(CFG.EVO_WORDS[s], catTotal(cat)), words: learnedCount(cat), cat };
+  const lvNeed = CFG.EVO_LV[p.stage + 1], lv = level(p.xp);
+  return { lvNeed, lv, ready: lv >= lvNeed, cat: SP[p.sp].cat };
 }
+// 等級到了不會自動進化，而是開放「進化挑戰」；只在第一次達到時通知一次
 function checkEvo(p) {
   const r = evoReq(p);
-  if (r && p.xp >= r.xpNeed && r.words >= r.wordNeed) { const old = petName(p); p.stage++; toast(`✨ ${old} 進化成 ${petName(p)}！`); checkEvo(p); }
+  if (r && r.ready && p.evoNotified !== p.stage) {
+    p.evoNotified = p.stage;
+    toast(`🌟 ${petName(p)} 可以進化了！到寵物倉庫按「進化挑戰」`);
+  }
+}
+function startEvo(id) {
+  const p = S.pets.find(x => x.id === id), r = p && evoReq(p);
+  if (!r || !r.ready) return;
+  const ws = shuffle(WORDS.filter(x => x.cat === r.cat).map(x => x.w)).slice(0, CFG.EVO_CHAL_N);
+  sess.evoPet = id; sess.evoOk = 0;
+  toast(`⚡ ${petName(p)} 的進化挑戰：${CATS[r.cat].name}類 ${ws.length} 題，答對 ${CFG.EVO_CHAL_PASS} 題就進化`);
+  startSession('evo', ws);
+}
+// ---------- 進化動畫 ----------
+// 原圖 → 變成發光剪影 → 新舊剪影越閃越快 → 白光 → 新外型現身＋光點散開
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let evoAudio = null;
+function evoSound(kind) {
+  try {
+    evoAudio = evoAudio || new (window.AudioContext || window.webkitAudioContext)();
+    const ac = evoAudio, t = ac.currentTime, out = ac.createGain();
+    out.gain.value = 0.07; out.connect(ac.destination);
+    if (kind === 'rise') {                      // 閃爍時逐漸升高的音
+      const o = ac.createOscillator(); o.type = 'triangle';
+      o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(880, t + 3.6);
+      out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(0.06, t + 0.5); out.gain.exponentialRampToValueAtTime(0.0001, t + 3.8);
+      o.connect(out); o.start(t); o.stop(t + 3.9);
+    } else {                                    // 現身時的上行琶音
+      [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + i * 0.11); g.gain.exponentialRampToValueAtTime(1, t + i * 0.11 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.11 + 0.9);
+        o.connect(g); g.connect(out); o.start(t + i * 0.11); o.stop(t + i * 0.11 + 1);
+      });
+    }
+  } catch (e) {}
+}
+async function playEvo(p, from, done) {
+  const oldName = SP[p.sp].names[from], newName = petName(p);
+  const fx = document.createElement('div'); fx.className = 'evofx';
+  fx.innerHTML = `<div class="rays"></div><div class="halo"></div>
+    <div class="evostage"><img class="ea" src="${spriteSrc(p.sp, from)}" draggable="false"><img class="eb" src="${spriteSrc(p.sp, p.stage)}" draggable="false"></div>
+    <div class="evotxt">咦？${esc(oldName)} 的樣子……！</div>
+    <button class="btn evodone" hidden>太棒了！</button><div class="evoflash"></div>`;
+  document.body.appendChild(fx);
+  const A = fx.querySelector('.ea'), B = fx.querySelector('.eb'), txt = fx.querySelector('.evotxt');
+  B.style.opacity = 0;
+  await sleep(1300);
+  fx.classList.add('glow'); A.classList.add('sil'); B.classList.add('sil');
+  await sleep(900);
+  evoSound('rise');
+  // 新舊剪影交替，間隔越來越短
+  let gap = 520, showB = false;
+  while (gap > 45) {
+    showB = !showB;
+    A.style.opacity = showB ? 0 : 1; B.style.opacity = showB ? 1 : 0;
+    (showB ? B : A).animate([{ transform: 'scale(.82)' }, { transform: 'scale(1)' }], { duration: Math.min(gap, 260), easing: 'ease-out' });
+    await sleep(gap); gap *= 0.84;
+  }
+  const flash = fx.querySelector('.evoflash');
+  flash.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: 1 }, { opacity: 0 }], { duration: 1100, easing: 'ease-in-out' });
+  await sleep(450);
+  A.style.opacity = 0; B.style.opacity = 1; B.classList.remove('sil'); fx.classList.add('done');
+  evoSound('chime');
+  for (let i = 0; i < 46; i++) {                 // 光點散開
+    const d = document.createElement('i'); d.className = 'evospark';
+    const ang = Math.random() * Math.PI * 2, dist = 140 + Math.random() * 260, sz = 4 + Math.random() * 8;
+    d.style.width = d.style.height = sz + 'px';
+    d.style.background = ['#fff6c8', '#ffd36b', '#ffffff', '#ffe9a8', '#c8f0ff'][i % 5];
+    fx.appendChild(d);
+    d.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+               { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist}px)) scale(.2)`, opacity: 0 }],
+              { duration: 900 + Math.random() * 900, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+  }
+  B.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 600, easing: 'cubic-bezier(.3,1.6,.5,1)' });
+  txt.innerHTML = `恭喜！${esc(oldName)} 進化成了 <b>${esc(newName)}</b>！`;
+  const btn = fx.querySelector('.evodone'); btn.hidden = false; btn.focus();
+  let closed = false;
+  const close = e => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (closed) return; closed = true;
+    document.removeEventListener('keydown', onKey, true);
+    fx.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).onfinish = () => fx.remove();
+    if (done) done();
+  };
+  const onKey = e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') close(e); };
+  btn.onclick = close; document.addEventListener('keydown', onKey, true);
+}
+function finishEvo() {
+  const p = S.pets.find(x => x.id === sess.evoPet), ok = sess.evoOk, n = sess.total;
+  sess.evoPet = null;
+  if (!p) return;
+  if (ok >= CFG.EVO_CHAL_PASS) {
+    const from = p.stage; p.stage++; save();
+    playEvo(p, from, () => {
+      toast(`✨ 挑戰成功（${ok}/${n}）！${SP[p.sp].names[from]} 進化成 ${petName(p)}！`);
+      if (p.desk) say(p.id, '我進化了！謝謝你～');
+      checkEvo(p); renderPets();
+    });
+  } else {
+    toast(`💦 挑戰失敗（答對 ${ok}/${n}，需要 ${CFG.EVO_CHAL_PASS} 題），多練練再來挑戰！`);
+  }
 }
 function mood(p) {
   const h = (Date.now() - S.lastPractice) / 3600e3;
@@ -347,10 +475,12 @@ function pickNormal() {
 function pickWrong() { const c = S.wrongBank.filter(w => w !== sess.lastWord); return (c.length ? c : S.wrongBank).slice().sort((a, b) => (recallP(a) ?? 0) - (recallP(b) ?? 0))[0]; }
 
 function nextQ() {
-  if (sess.mode === 'daily' || sess.mode === 'extra') {
+  if (sess.mode === 'daily' || sess.mode === 'extra' || sess.mode === 'evo') {
     if (sess.queue.length) { sess.idx++; setQ(sess.queue.shift()); return renderQuiz(); }
-    if (sess.mode === 'daily') { S.daily.quizDone = true; toast('📋 今日抽考完成！'); } else toast('❗ 額外題目完成！');
-    sess.mode = 'normal'; save();
+    if (sess.mode === 'daily') { S.daily.quizDone = true; toast('📋 今日抽考完成！'); }
+    else if (sess.mode === 'extra') toast('❗ 額外題目完成！');
+    else finishEvo();
+    sess.mode = 'normal'; save(); renderDesk();
   }
   S.forcedEndSize = Math.min(S.forcedEndSize, S.wrongBank.length);
   if (S.forced > 0 && !S.wrongBank.length) S.forced = 0;
@@ -395,6 +525,7 @@ function record(q, ok) {
   S.records.push({ t: now, word: q.word, type: q.type, ok, mode: sess.mode, sec: Math.round((now - (sess.shownAt || now)) / 100) / 10, ver: S.pure ? 'practice' : 'pet' });
   r.seen++; r.last = now; S.lastPractice = now;
   const out = { gain: 0, capped: false, egg: null, hatched: [] };
+  if (ok && sess.mode === 'evo') sess.evoOk++;
   if (ok) {
     r.correct++; r.m = Math.min(3, r.m + 1); if (r.m >= 2) r.learned = true;
     S.wrongBank = S.wrongBank.filter(w => w !== q.word);                      // 答對 1 次移出錯題
@@ -406,7 +537,7 @@ function record(q, ok) {
     const counted = sess.mode === 'normal' || sess.mode === 'forced';         // 抽考、額外題不計入每日上限
     let g = pts;
     if (counted) { g = Math.max(0, Math.min(pts, CFG.DAILY_CAP - S.daily.points)); S.daily.points += g; out.capped = g < pts; }
-    deskPets().forEach(p => p.xp += g);                                        // 桌面每隻都拿全額
+    deskPets().forEach(p => p.xp += g * rule('XP_MUL'));                       // 桌面每隻都拿全額（展示模式 ×10）
     out.gain = g;
     // 孵蛋進度
     for (const e of S.eggs) e.prog++;
@@ -452,6 +583,7 @@ function renderQuiz() {
     forced: `<span class="badge mode-forced">強制練錯題 ${CFG.FORCED_N - S.forced + (sess.answered ? 0 : 1)}/${CFG.FORCED_N}</span>`,
     daily: `<span class="badge mode-daily">每日抽考 ${sess.idx}/${sess.total}</span>`,
     extra: `<span class="badge mode-extra">寵物額外題 ${sess.idx}/${sess.total}</span>`,
+    evo: `<span class="badge mode-evo">⚡ 進化挑戰 ${sess.idx}/${sess.total}・已答對 ${sess.evoOk || 0}／需 ${CFG.EVO_CHAL_PASS}</span>`,
   }[sess.mode];
   let body = '';
   if (q.type === 'en2zh') body = `<div class="prompt">${esc(W.w)}</div><div class="sub">選出正確的中文意思</div>`;
@@ -498,16 +630,21 @@ document.addEventListener('keydown', e => {
 // ---------- 畫面：倉庫 ----------
 function petCard(p) {
   const sp = SP[p.sp], st = petStats(p), r = evoReq(p), lv = level(p.xp);
-  const evo = r ? `下一階：經驗 ${Math.min(p.xp, r.xpNeed)}/${r.xpNeed}　${CATS[r.cat].name}類學會 ${Math.min(r.words, r.wordNeed)}/${r.wordNeed} 字
-      <div class="bar"><i style="width:${Math.min(100, 50 * Math.min(1, p.xp / r.xpNeed) + 50 * Math.min(1, r.words / Math.max(1, r.wordNeed)))}%"></i></div>` : '已是最終階段';
+  const evo = !r ? '已是最終階段'
+    : r.ready ? `🌟 等級已達 Lv.${r.lvNeed}！挑戰 ${CATS[r.cat].name}類 ${CFG.EVO_CHAL_N} 題，答對 ${CFG.EVO_CHAL_PASS} 題就進化`
+    : `下一階：Lv.${r.lv} / Lv.${r.lvNeed} 開放進化挑戰
+      <div class="bar"><i style="width:${Math.min(100, 100 * p.xp / xpFor(r.lvNeed))}%"></i></div>`;
+  const xpTxt = lv >= CFG.LV_MAX ? `經驗 ${p.xp}（等級已滿）` : `經驗 ${p.xp}（下一級還差 ${xpFor(lv + 1) - p.xp}）`;
   const ivTxt = v => (v >= 1 ? '+' : '') + Math.round((v - 1) * 100) + '%';
   return `<div class="pcard"><div class="top"><div class="em">${petImg(p, 72)}</div><div>
       <div class="nm">${petName(p)} <span class="meta">Lv.${lv} · 第 ${p.stage + 1} 階</span></div>
       <div>${catTag(sp.cat)} <span class="meta">${sp.range > 1 ? '遠程' : '近戰'}</span></div></div></div>
-    <div class="row">HP ${st.hp}（${ivTxt(p.iv.hp)}）　攻擊 ${st.atk}（${ivTxt(p.iv.atk)}）　經驗 ${p.xp}</div>
+    <div class="row">HP ${st.hp}（${ivTxt(p.iv.hp)}）　攻擊 ${st.atk}（${ivTxt(p.iv.atk)}）<br>${xpTxt}</div>
     <div class="row">技能「${sp.skill.name}」：${sp.skill.desc}<br><span class="meta">冷卻 ${sp.skill.cd} 回合 · 強度 ×${skillPow(sp.cat).toFixed(2)}</span></div>
     <div class="row">${evo}</div>
-    <div class="row" style="margin-top:8px"><button class="btn ${p.desk ? 'alt' : ''}" data-mv="${p.id}">${p.desk ? '收進倉庫' : '放到桌面'}</button></div></div>`;
+    ${r && r.ready ? `<div class="row" style="margin-top:8px"><button class="btn evo" data-evo="${p.id}" style="width:100%">⚡ 進化挑戰</button></div>` : ''}
+    <div class="row" style="margin-top:8px"><button class="btn ${p.desk ? 'alt' : ''}" data-mv="${p.id}">${p.desk ? '收進倉庫' : '放到桌面'}</button>
+      <button class="btn del" data-del="${p.id}" title="永久刪除這隻精靈">🗑️ 放生</button></div></div>`;
 }
 function renderPets() {
   const desk = deskPets(), store = S.pets.filter(p => !p.desk);
@@ -522,6 +659,23 @@ function renderPets() {
     const p = S.pets.find(x => x.id === +b.dataset.mv);
     if (!p.desk && deskPets().length >= CFG.DESK_MAX) return toast('桌面最多 6 隻，先收一隻進倉庫');
     p.desk = !p.desk; p.pos = null; save(); renderPets(); renderDesk(); renderBattleSide(); drawFormation();
+  });
+  document.querySelectorAll('[data-evo]').forEach(b => b.onclick = () => startEvo(+b.dataset.evo));
+  // 放生：按一次變成「確定放生？」，3 秒內再按一次才真的刪除
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+    const id = +b.dataset.del, p = S.pets.find(x => x.id === id);
+    if (S.pets.length <= 1) return toast('至少要留一隻精靈陪你');
+    if (!b.dataset.armed) {
+      b.dataset.armed = 1; b.textContent = '確定放生？'; b.classList.add('armed');
+      setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = '🗑️ 放生'; b.classList.remove('armed'); } }, 3000);
+      return;
+    }
+    S.pets = S.pets.filter(x => x.id !== id);
+    if (S.extraPet === id) S.extraPet = null;
+    if (selPet === id) selPet = null;
+    if (sayPet === id) sayPet = null;
+    save(); toast(`👋 ${petName(p)} 回到大自然了`);
+    renderPets(); renderDesk(); renderBattleSide(); drawFormation();
   });
 }
 
@@ -745,7 +899,7 @@ function startBattle() {
     replaying = false;
     const win = res.winner === 0, draw = res.winner === -1;
     const sc = win ? 30 : draw ? 15 : 10, xp = win ? 20 : 8;
-    S.score += sc; list.forEach(p => { p.xp += xp; checkEvo(p); });
+    S.score += sc; list.forEach(p => { p.xp += xp * rule('XP_MUL'); checkEvo(p); });
     S.battleLog.unshift(`${win ? '🏆 勝利' : draw ? '🤝 平手' : '💥 落敗'}　對手：${opp.name}（${opp.team.length} 隻）　排行分數 +${sc}，出戰寵物各 +${xp} 經驗`);
     S.battleLog = S.battleLog.slice(0, 20);
     // 其他玩家分數也會慢慢變動（示意）
@@ -836,7 +990,7 @@ function renderHelp() {
     <label class="toggle"><input type="checkbox" id="cPure" ${S.pure ? 'checked' : ''}> 純練習版（交叉實驗用：沒有寵物、蛋、對戰；做題、錯題、抽考照常）</label>
     <label class="toggle"><input type="checkbox" id="cConsent" ${S.consent ? 'checked' : ''}> 我同意匿名提供作答紀錄做實驗分析（正式版會上傳到伺服器；原型只能匯出）</label>
     <div style="margin:6px 0 10px"><button class="btn alt" id="bExport" ${S.consent ? '' : 'disabled'}>匯出作答紀錄（CSV，${S.records.length} 筆）</button></div>
-    <label class="toggle"><input type="checkbox" id="cDemo" ${S.demo ? 'checked' : ''}> 展示模式（掉蛋率 30%、答對 3 題孵化、寵物額外題每 1 分鐘可出現一次）</label>
+    <label class="toggle"><input type="checkbox" id="cDemo" ${S.demo ? 'checked' : ''}> 展示模式（掉蛋率 30%、答對 3 題孵化、寵物額外題每 1 分鐘可出現一次、經驗值 ×10）</label>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
       <button class="btn alt" id="bDay">模擬過了一天</button>
       <button class="btn alt" id="bReset">清除所有資料重來</button>
@@ -850,7 +1004,7 @@ function renderHelp() {
       <li><b>每日抽考</b>：每天一次、最多 10 題，抽答對過且預測最快忘的字；可以「稍後再考」，當天任何時間回來考，不能跳過。</li>
       <li><b>寵物額外題</b>：桌面寵物頭上出現 ❗ 時點它，做 5 題舊字；一天最多 4 次、間隔至少 2 小時；獎勵不計入每日上限。</li>
       <li><b>獎勵</b>：選擇題 10 點、拼字 15 點，桌面每隻寵物都拿全額；每天上限 300 點（抽考與額外題不計）。</li>
-      <li><b>寵物</b>：12 種原創寵物（6 類各 2 種）；3 階段進化要同時達到經驗門檻和該類學會字數；個體數值 ±10%；答對有 5% 機率掉該類的蛋，再答對 10 題孵化；太久沒練習會不開心。</li>
+      <li><b>寵物</b>：12 種原創寵物（6 類各 2 種）；等級上限 Lv.50，越高級升級越慢（升到 Lv.L 要累積 5×(L−1)² 經驗）；3 階段進化：Lv.16 和 Lv.36 時開放「進化挑戰」，做 5 題該寵物同類的單字、答對 4 題就進化，失敗可以再挑戰；個體數值 ±10%；答對有 5% 機率掉該類的蛋，再答對 10 題孵化；太久沒練習會不開心。</li>
       <li><b>對戰</b>：7×8 六角格，6 對 6 自動移動、找目標、近戰或遠程攻擊，技能有冷卻，技能強度隨該類學會字數提升；同屬性 2 隻、3 隻有羈絆；每天 3 場，每答對 10 題多 1 場（最多 +3）。</li>
     </ul>
     <h3>跟正式版的差別</h3>
@@ -859,7 +1013,7 @@ function renderHelp() {
       <li>對手由程式依你的實力產生；正式版走伺服器的「上傳隊伍、找對手、算戰鬥、排行榜」4 個 API。<code>teamSnapshot()</code> 就是要上傳的隊伍格式，<code>simulate()</code> 可以照搬到伺服器。</li>
       <li>暱稱、純練習版、實驗資料同意都在上方設定；正式版的作答紀錄會在同意後匿名上傳伺服器，原型改成匯出 CSV。</li>
       <li>遺忘預測用半衰期公式暫代（<code>recallP()</code>），之後換成 Logistic Regression 模型。</li>
-      <li>字庫只有 60 個字（每類 10 個），所以第 3 階段進化的「15 個字」暫時以該類全部字數為上限；例句為示範自寫，正式版改用 Tatoeba 並標示出處。</li>
+      <li>字庫只有 60 個字（每類 10 個）；例句為示範自寫，正式版改用 Tatoeba 並標示出處。</li>
       <li>寵物圖使用 <code>art/spirits/</code> 的去背 PNG；技能是暫定，等團隊設計好再換。</li>
     </ul>`;
   $('#cDemo').onchange = e => { S.demo = e.target.checked; save(); renderHeader(); };
