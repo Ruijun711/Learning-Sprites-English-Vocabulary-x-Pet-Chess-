@@ -25,7 +25,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QSystemTrayIcon,
 
 ROOT = Path(__file__).resolve().parent.parent
 HTML = ROOT / "app" / "learning-spirit.html"
-ICON = ROOT / "art" / "spirits" / "abc-1.png"
+ICON = ROOT / "art" / "logo.ico"
 DATA_DIR = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "LearningSpirit"
 
 # 網頁內的桌面列由真正的桌面寵物取代，所以藏起來
@@ -309,9 +309,13 @@ class Manager:
 
 
 def main():
+    if sys.platform == "win32":  # 讓工作列顯示學習精靈的圖示，而不是 Python 的
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("LearningSpirit.Desktop")
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     app.setApplicationName("LearningSpirit")
+    app.setWindowIcon(QIcon(str(ICON)))
     app.setQuitOnLastWindowClosed(False)
     _m = Manager(app)
     sys.exit(app.exec())
