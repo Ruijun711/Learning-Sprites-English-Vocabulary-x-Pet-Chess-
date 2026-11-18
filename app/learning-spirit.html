@@ -83,9 +83,14 @@ canvas{background:#efe7d6;border-radius:12px;max-width:100%;touch-action:manipul
 .tchip.sel{border-color:var(--accent2);background:#fff3dc}
 .log{font-size:13px;color:#4a453f;line-height:1.7}
 .muted{color:var(--muted);font-size:13px}
-#desk{position:fixed;left:0;right:0;bottom:0;height:132px;background:linear-gradient(#3b5b7a,#2c4560);display:flex;align-items:flex-end;gap:6px;padding:0 18px 10px;z-index:5;overflow-x:auto}
+#desk{position:fixed;left:0;right:0;bottom:0;height:132px;background:linear-gradient(#3b5b7a,#2c4560);padding:0 18px;z-index:5;overflow:hidden}
 #desk .label{position:absolute;left:12px;top:6px;color:#cfe0f2;font-size:11px;letter-spacing:1px}
-.dpet{position:relative;width:96px;text-align:center;color:#fff;cursor:pointer;flex:none}
+#desk .empty{color:#cfe0f2;padding:48px 10px 0}
+.dpet{position:absolute;bottom:10px;left:18px;width:96px;text-align:center;color:#fff;cursor:pointer}
+.dpet .react{position:absolute;left:2px;top:20px;z-index:2;font-size:22px;animation:pop .35s ease-out;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
+.dpet.reacting .em{animation:hop .45s ease-in-out 3}
+@keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-14px)}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
 .dpet .em{display:inline-block;line-height:0;animation:bob 2.4s ease-in-out infinite}
 .dpet:nth-child(odd) .em{animation-delay:.6s}
 .dpet .nm{font-size:11px;opacity:.9}
@@ -950,20 +955,91 @@ function playReplay(res, done) {
 let sayTimer = null, sayPet = null, sayText = '';
 function renderDesk() {
   const list = deskPets();
+  ensureDeskPos(list);
   $('#desk').innerHTML = `<div class="label">🖥️ 你的桌面</div>` + list.map(p => {
-    const m = mood(p);
-    return `<div class="dpet" data-dp="${p.id}">
+    const m = mood(p), r = deskReact[p.id];
+    return `<div class="dpet${r ? ' reacting' : ''}" data-dp="${p.id}" style="left:${18 + deskPos[p.id].x}px">
       ${S.extraPet === p.id ? '<div class="alert" title="點我做額外題目">❗</div>' : ''}
       ${sayPet === p.id ? `<div class="say">${sayText}</div>` : ''}
+      ${r ? `<div class="react">${r}</div>` : ''}
       <div class="mood">${m.f}</div><div class="em">${petImg(p, 78)}</div><div class="nm">${petName(p)} Lv.${level(p.xp)}</div></div>`;
-  }).join('') + (list.length ? '' : '<div style="color:#cfe0f2;padding:40px 10px">桌面上沒有寵物，到倉庫放幾隻上來吧</div>');
+  }).join('') + (list.length ? '' : '<div class="empty">桌面上沒有寵物，到倉庫放幾隻上來吧</div>');
   document.querySelectorAll('[data-dp]').forEach(el => el.onclick = () => {
     const id = +el.dataset.dp;
+    deskPos[id].pauseUntil = performance.now() + 3500;   // 點到的寵物先停下來
     if (S.extraPet === id) return startExtra();
     say(id, pick(mood(S.pets.find(p => p.id === id)).say));
   });
 }
 function say(id, text) { sayPet = id; sayText = text; renderDesk(); clearTimeout(sayTimer); sayTimer = setTimeout(() => { sayPet = null; renderDesk(); }, 3500); }
+
+// ---------- 桌面寵物走動：靠近別隻時會互動（寵物可以互相重疊） ----------
+// 原型值：寬度、速度、互動距離與冷卻時間都可以再調
+const DESK = { W: 96, SPEED_MIN: 16, SPEED_MAX: 32, REACT_DIST: 110, PAIR_CD: 60e3, ANY_CD: 15e3, REACT_MS: 2600 };
+const deskPos = {};    // 寵物 id → { x, dir, speed, pauseUntil }（只存在畫面上，不存檔）
+const deskReact = {};  // 寵物 id → 正在顯示的反應符號
+const pairCd = {};     // 'a-b' → 這兩隻下次可以再互動的時間
+let anyCd = 0;         // 整個桌面下次可以再有互動的時間，避免太吵
+const deskWidth = () => Math.max(DESK.W, $('#desk').clientWidth - 36 - DESK.W);   // x 的可用範圍（扣掉左右留白與寵物寬度）
+
+function ensureDeskPos(list) {
+  const ids = new Set(list.map(p => p.id));
+  for (const id of Object.keys(deskPos)) if (!ids.has(+id)) delete deskPos[id];
+  const W = deskWidth();
+  for (const p of list) {
+    if (!deskPos[p.id]) deskPos[p.id] = { x: Math.random() * W, dir: Math.random() < 0.5 ? -1 : 1, speed: DESK.SPEED_MIN + Math.random() * (DESK.SPEED_MAX - DESK.SPEED_MIN), pauseUntil: 0 };
+    deskPos[p.id].x = Math.min(deskPos[p.id].x, W);
+  }
+}
+
+function deskReaction(a, b) {
+  const sa = SP[a.sp], sb = SP[b.sp];
+  if (a.sp === b.sp) return { e: '💕', lines: [`是另一隻${sa.names[0]}耶！`, '我們是同一種！'] };
+  if (sa.cat === sb.cat) return { e: '✨', lines: [`同樣是${CATS[sa.cat].name}屬性！`, '一起出戰有羈絆加成！'] };
+  if (mood(a).f !== '😊') return { e: '💭', lines: ['主人好久沒來了…', '你也在等主人嗎？'] };
+  return { e: '👋', lines: [`嗨，${petName(b)}！`, '一起玩吧！', '你今天學了幾個字？', '比賽誰先長大！'] };
+}
+
+function startReaction(a, b, now) {
+  const r = deskReaction(a, b), pa = deskPos[a.id], pb = deskPos[b.id];
+  pairCd[[a.id, b.id].sort().join('-')] = now + DESK.PAIR_CD; anyCd = now + DESK.ANY_CD;
+  pa.pauseUntil = pb.pauseUntil = now + DESK.REACT_MS;
+  // 互動完各自往反方向走開
+  const left = pa.x < pb.x ? pa : pb, right = left === pa ? pb : pa;
+  left.dir = -1; right.dir = 1;
+  deskReact[a.id] = deskReact[b.id] = r.e;
+  if (sayPet == null) say(a.id, pick(r.lines)); else renderDesk();
+  setTimeout(() => { delete deskReact[a.id]; delete deskReact[b.id]; renderDesk(); }, DESK.REACT_MS);
+}
+
+let deskLast = 0;
+function deskFrame(now) {
+  const dt = Math.min(0.1, (now - (deskLast || now)) / 1000); deskLast = now;
+  requestAnimationFrame(deskFrame);
+  if (!S || S.pure || document.hidden) return;
+  const list = deskPets(); if (!list.length) return;
+  ensureDeskPos(list);
+  const W = deskWidth();
+  for (const p of list) {
+    const o = deskPos[p.id];
+    if (now < o.pauseUntil || deskReact[p.id]) continue;
+    if (Math.random() < dt * 0.12) { if (Math.random() < 0.5) o.pauseUntil = now + 1000 + Math.random() * 3000; else o.dir *= -1; continue; }
+    o.x += o.dir * o.speed * dt;
+    if (o.x <= 0) { o.x = 0; o.dir = 1; }
+    if (o.x >= W) { o.x = W; o.dir = -1; }
+  }
+  // 兩隻走近時互動（同一對 PAIR_CD 內不重複，整個桌面 ANY_CD 內最多一次）
+  for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+    if (now < anyCd) break;
+    let a = list[i], b = list[j];
+    if (deskPos[a.id].x > deskPos[b.id].x) [a, b] = [b, a];
+    const pa = deskPos[a.id], pb = deskPos[b.id];
+    const closing = (pa.dir > 0 && now >= pa.pauseUntil) || (pb.dir < 0 && now >= pb.pauseUntil);
+    if (!closing || deskReact[a.id] || deskReact[b.id] || pb.x - pa.x > DESK.REACT_DIST) continue;
+    if (now >= (pairCd[[a.id, b.id].sort().join('-')] || 0)) startReaction(a, b, now);
+  }
+  document.querySelectorAll('#desk [data-dp]').forEach(el => { const o = deskPos[+el.dataset.dp]; if (o) el.style.left = (18 + o.x) + 'px'; });
+}
 
 // ---------- 頂部與說明 ----------
 function applyVersion() {
@@ -1003,6 +1079,7 @@ function renderHelp() {
       <li><b>錯題題庫</b>：答錯 1 次進入、答對 1 次移出；累積 5 題時強制先練 5 題錯題，依預測答對機率由低到高出題。</li>
       <li><b>作答紀錄</b>：每一題的單字、題型、對錯、模式、作答秒數都會記錄；同意後可匯出 CSV 做實驗分析。</li>
       <li><b>每日抽考</b>：每天一次、最多 10 題，抽答對過且預測最快忘的字；可以「稍後再考」，當天任何時間回來考，不能跳過。</li>
+      <li><b>桌面寵物</b>：會在桌面上走動；走近別隻時會停下來互動（同種 💕、同屬性 ✨、其他 👋），互動完各自走開。點寵物會停下來說話。</li>
       <li><b>寵物額外題</b>：桌面寵物頭上出現 ❗ 時點它，做 5 題舊字；一天最多 4 次、間隔至少 2 小時；獎勵不計入每日上限。</li>
       <li><b>獎勵</b>：選擇題 10 點、拼字 15 點，桌面每隻寵物都拿全額；每天上限 300 點（抽考與額外題不計）。</li>
       <li><b>寵物</b>：12 種原創寵物（6 類各 2 種）；等級上限 Lv.50，越高級升級越慢（升到 Lv.L 要累積 5×(L−1)² 經驗）；3 階段進化：Lv.16 和 Lv.36 時開放「進化挑戰」，做 5 題該寵物同類的單字、全部答對才進化，答錯一題就挑戰失敗，可以再挑戰；個體數值 ±10%；答對有 5% 機率掉該類的蛋，再答對 10 題孵化；太久沒練習會不開心。</li>
@@ -1082,6 +1159,7 @@ if (typeof document !== 'undefined' && document.getElementById('board')) {
   $('#board').addEventListener('click', boardClick);
   init();
   setInterval(tick, 10000);
+  requestAnimationFrame(deskFrame);
 }
 </script>
 </body>

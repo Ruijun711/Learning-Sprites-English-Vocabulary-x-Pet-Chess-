@@ -1,0 +1,250 @@
+{
+  "_說明": "每張精靈圖（256×256 座標）的部位標記，給 tools/make_anim_frames.py 產生表情與關節動作圖。eyes：[中心x, 中心y, 半寬, 半高]；parts：會擺動的部位，pivot 是關節（轉軸）、region 是受影響範圍的橢圓 [cx, cy, rx, ry]、amp 是擺動角度、anim 是歸在哪一種動作（fidget 待機小動作、flap 揮動、punch 出拳）；shell：縮回殼裡用（head.poly 頭的輪廓、head.slide 頭縮進殼裡要移動的距離、opening 殼口橢圓 [cx, cy, rx, ry]（頭縮進去後露出的深色洞，上緣和右緣藏在米飯邊下面）、legs 腳開始的高度）。",
+  "abc-1": {
+    "eyes": [[79, 102, 16, 19], [140, 101, 17, 20]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [72, 150], "region": [42, 160, 40, 36], "amp": 22},
+      {"kind": "wing", "anim": "flap", "pivot": [184, 150], "region": [216, 160, 42, 36], "amp": -22}
+    ]
+  },
+  "abc-2": {
+    "eyes": [[91, 81, 13, 15], [134, 81, 14, 15]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [90, 128], "region": [52, 130, 46, 42], "amp": 18},
+      {"kind": "wing", "anim": "flap", "pivot": [165, 128], "region": [205, 130, 48, 42], "amp": -18}
+    ]
+  },
+  "abc-3": {
+    "eyes": [[94, 96, 11, 11], [126, 96, 12, 11]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [97, 112], "region": [50, 110, 52, 48], "amp": 15},
+      {"kind": "wing", "anim": "flap", "pivot": [160, 112], "region": [206, 110, 52, 48], "amp": -15}
+    ]
+  },
+  "berry-1": {
+    "eyes": [[75, 131, 12, 16]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [168, 160], "region": [205, 125, 48, 80], "amp": 9},
+      {"kind": "ear", "anim": "fidget", "pivot": [72, 92], "region": [52, 55, 30, 45], "amp": -7, "phase": 0.25},
+      {"kind": "ear", "anim": "fidget", "pivot": [118, 92], "region": [128, 52, 32, 45], "amp": 7, "phase": 0.25}
+    ]
+  },
+  "berry-2": {
+    "eyes": [[56, 100, 9, 11]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [160, 168], "region": [202, 128, 50, 82], "amp": 9}
+    ]
+  },
+  "berry-3": {
+    "eyes": [[50, 80, 8, 7]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [150, 165], "region": [202, 150, 58, 98], "amp": 7}
+    ]
+  },
+  "cloud-1": {
+    "eyes": [[55, 108, 8, 12], [97, 108, 9, 12]],
+    "parts": []
+  },
+  "cloud-2": {
+    "eyes": [[70, 113, 7, 10], [98, 113, 7, 10]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [210, 150], "region": [232, 150, 26, 30], "amp": 14}
+    ]
+  },
+  "cloud-3": {
+    "eyes": [[54, 130, 7, 7], [93, 129, 8, 8]],
+    "parts": []
+  },
+  "fist-1": {
+    "eyes": [[67, 110, 14, 15], [126, 111, 15, 16]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [182, 172], "region": [215, 140, 38, 68], "amp": 10},
+      {"kind": "arm", "anim": "punch", "pivot": [88, 150], "region": [50, 172, 40, 36], "amp": 0, "punch": [-14, -4]},
+      {"kind": "arm", "anim": "punch", "pivot": [125, 145], "region": [165, 172, 44, 40], "amp": 0, "punch": [-14, -4], "phase": 0.5}
+    ]
+  },
+  "fist-2": {
+    "eyes": [[77, 84, 11, 12], [123, 84, 12, 13]],
+    "parts": [
+      {"kind": "ribbon", "anim": "fidget", "pivot": [176, 72], "region": [212, 76, 40, 32], "amp": 10},
+      {"kind": "arm", "anim": "punch", "pivot": [96, 145], "region": [58, 152, 42, 40], "amp": 0, "punch": [-14, -3]},
+      {"kind": "arm", "anim": "punch", "pivot": [110, 140], "region": [146, 156, 42, 44], "amp": 0, "punch": [-14, -3], "phase": 0.5}
+    ]
+  },
+  "fist-3": {
+    "eyes": [[88, 72, 8, 8], [116, 72, 9, 8]],
+    "parts": [
+      {"kind": "ribbon", "anim": "fidget", "pivot": [166, 56], "region": [212, 50, 46, 26], "amp": 10},
+      {"kind": "arm", "anim": "punch", "pivot": [132, 170], "region": [172, 176, 52, 40], "amp": 0, "punch": [-12, -3]}
+    ]
+  },
+  "gear-1": {
+    "eyes": [[54, 96, 10, 15], [96, 96, 13, 18]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [200, 156], "region": [224, 150, 30, 27], "amp": 16},
+      {"kind": "ear", "anim": "fidget", "pivot": [124, 80], "region": [130, 48, 26, 34], "amp": 7, "phase": 0.3}
+    ]
+  },
+  "gear-2": {
+    "eyes": [[47, 78, 8, 12], [81, 77, 11, 15]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [182, 135], "region": [208, 103, 38, 40], "amp": 14}
+    ]
+  },
+  "gear-3": {
+    "eyes": [[71, 66, 8, 7]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [202, 125], "region": [226, 100, 30, 32], "amp": 12}
+    ]
+  },
+  "heart-1": {
+    "eyes": [[72, 131, 9, 15], [119, 131, 12, 15]],
+    "parts": [
+      {"kind": "ear", "anim": "fidget", "pivot": [80, 105], "region": [64, 60, 32, 52], "amp": -8},
+      {"kind": "ear", "anim": "fidget", "pivot": [122, 105], "region": [162, 60, 46, 50], "amp": 8, "phase": 0.2},
+      {"kind": "tail", "anim": "flap", "pivot": [166, 160], "region": [192, 150, 32, 32], "amp": 14}
+    ]
+  },
+  "heart-2": {
+    "eyes": [[88, 120, 9, 14], [124, 119, 12, 15]],
+    "parts": [
+      {"kind": "ear", "anim": "fidget", "pivot": [96, 105], "region": [80, 60, 30, 50], "amp": -7},
+      {"kind": "ear", "anim": "fidget", "pivot": [130, 105], "region": [150, 60, 32, 50], "amp": 7, "phase": 0.2},
+      {"kind": "wing", "anim": "flap", "pivot": [76, 130], "region": [40, 122, 40, 30], "amp": 20},
+      {"kind": "wing", "anim": "flap", "pivot": [160, 135], "region": [206, 130, 48, 40], "amp": -20}
+    ]
+  },
+  "heart-3": {
+    "eyes": [[130, 90, 10, 11], [169, 89, 9, 11]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [100, 110], "region": [50, 75, 54, 62], "amp": 14},
+      {"kind": "wing", "anim": "flap", "pivot": [150, 110], "region": [205, 75, 54, 62], "amp": -14}
+    ]
+  },
+  "lamp-1": {
+    "eyes": [[63, 117, 12, 15], [108, 116, 12, 16]],
+    "parts": [
+      {"kind": "antenna", "anim": "fidget", "pivot": [104, 86], "region": [76, 44, 34, 44], "amp": -9},
+      {"kind": "antenna", "anim": "fidget", "pivot": [122, 86], "region": [162, 44, 42, 44], "amp": 9, "phase": 0.3},
+      {"kind": "wing", "anim": "flap", "pivot": [165, 160], "region": [196, 175, 40, 42], "amp": -18}
+    ]
+  },
+  "lamp-2": {
+    "eyes": [[79, 109, 8, 10], [109, 107, 10, 12]],
+    "parts": [
+      {"kind": "antenna", "anim": "fidget", "pivot": [108, 86], "region": [94, 44, 30, 42], "amp": -8},
+      {"kind": "antenna", "anim": "fidget", "pivot": [130, 86], "region": [152, 44, 36, 42], "amp": 8, "phase": 0.3},
+      {"kind": "wing", "anim": "flap", "pivot": [90, 150], "region": [44, 160, 48, 44], "amp": 16},
+      {"kind": "wing", "anim": "flap", "pivot": [160, 140], "region": [206, 146, 48, 52], "amp": -16}
+    ]
+  },
+  "lamp-3": {
+    "eyes": [[85, 97, 6, 6], [103, 96, 6, 7]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [110, 130], "region": [55, 130, 58, 78], "amp": 12},
+      {"kind": "wing", "anim": "flap", "pivot": [150, 130], "region": [201, 130, 58, 78], "amp": -12}
+    ]
+  },
+  "letter-1": {
+    "eyes": [[64, 96, 9, 17], [116, 95, 13, 16]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [76, 140], "region": [48, 160, 32, 34], "amp": 22},
+      {"kind": "wing", "anim": "flap", "pivot": [175, 140], "region": [206, 160, 34, 36], "amp": -22},
+      {"kind": "comb", "anim": "fidget", "pivot": [124, 70], "region": [126, 44, 42, 30], "amp": 7}
+    ]
+  },
+  "letter-2": {
+    "eyes": [[110, 74, 9, 10]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [80, 120], "region": [44, 125, 40, 50], "amp": 18},
+      {"kind": "wing", "anim": "flap", "pivot": [160, 115], "region": [206, 120, 46, 54], "amp": -18}
+    ]
+  },
+  "letter-3": {
+    "eyes": [[103, 69, 6, 7]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [110, 110], "region": [55, 95, 60, 62], "amp": 13},
+      {"kind": "wing", "anim": "flap", "pivot": [146, 110], "region": [200, 95, 56, 66], "amp": -13}
+    ]
+  },
+  "onigiri-1": {
+    "eyes": [[47, 116, 11, 18], [95, 118, 12, 19]],
+    "parts": [
+      {"kind": "leaf", "anim": "fidget", "pivot": [176, 100], "region": [210, 60, 36, 46], "amp": 9}
+    ],
+    "shell": {"legs": 192}
+  },
+  "onigiri-2": {
+    "eyes": [[70, 138, 10, 10]],
+    "parts": [],
+    "shell": {"head": {"poly": [[38, 104], [56, 104], [76, 109], [93, 117], [101, 127], [108, 135], [114, 147], [112, 161], [104, 171], [88, 177], [60, 180], [36, 176], [20, 168], [13, 156], [14, 140], [20, 124], [28, 110]], "slide": [40, -8]}, "opening": [77, 141, 41, 42], "legs": 196}
+  },
+  "onigiri-3": {
+    "eyes": [[52, 136, 8, 8]],
+    "parts": [],
+    "shell": {"head": {"poly": [[15, 117], [23, 101], [40, 93], [63, 97], [82, 108], [94, 120], [99, 136], [97, 152], [86, 162], [70, 166], [43, 166], [27, 161], [13, 152], [9, 137]], "slide": [38, -6]}, "opening": [64, 130, 40, 41], "legs": 192}
+  },
+  "sprout-1": {
+    "eyes": [[46, 114, 11, 16], [114, 114, 14, 18]],
+    "parts": [
+      {"kind": "leaf", "anim": "fidget", "pivot": [116, 50], "region": [116, 30, 40, 26], "amp": 10, "phase": 0.3},
+      {"kind": "tail", "anim": "fidget", "pivot": [190, 192], "region": [216, 150, 34, 56], "amp": 9}
+    ]
+  },
+  "sprout-2": {
+    "eyes": [[73, 105, 9, 8]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [80, 132], "region": [48, 142, 34, 34], "amp": 16},
+      {"kind": "wing", "anim": "flap", "pivot": [156, 140], "region": [202, 105, 50, 56], "amp": -14},
+      {"kind": "tail", "anim": "fidget", "pivot": [196, 214], "region": [226, 186, 32, 50], "amp": 10}
+    ]
+  },
+  "sprout-3": {
+    "eyes": [[72, 85, 6, 6]],
+    "parts": [
+      {"kind": "wing", "anim": "flap", "pivot": [86, 110], "region": [44, 105, 42, 56], "amp": 12},
+      {"kind": "wing", "anim": "flap", "pivot": [150, 100], "region": [202, 95, 54, 56], "amp": -12}
+    ]
+  },
+  "star-1": {
+    "eyes": [[48, 106, 12, 20], [102, 105, 14, 19]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [162, 190], "region": [206, 152, 48, 64], "amp": 11},
+      {"kind": "ear", "anim": "fidget", "pivot": [130, 90], "region": [140, 45, 32, 42], "amp": 7, "phase": 0.3}
+    ]
+  },
+  "star-2": {
+    "eyes": [[34, 80, 6, 10], [82, 80, 10, 12]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [166, 166], "region": [210, 100, 46, 82], "amp": 8}
+    ]
+  },
+  "star-3": {
+    "eyes": [[59, 79, 6, 6]],
+    "parts": [
+      {"kind": "tail", "anim": "fidget", "pivot": [132, 172], "region": [196, 160, 66, 82], "amp": 7},
+      {"kind": "wing", "anim": "flap", "pivot": [116, 120], "region": [160, 90, 50, 52], "amp": -14}
+    ]
+  },
+  "teddy-1": {
+    "eyes": [[64, 83, 9, 13], [118, 82, 11, 14]],
+    "parts": [
+      {"kind": "ear", "anim": "fidget", "pivot": [66, 70], "region": [46, 48, 26, 28], "amp": -8},
+      {"kind": "ear", "anim": "fidget", "pivot": [155, 70], "region": [178, 48, 28, 28], "amp": 8, "phase": 0.2},
+      {"kind": "tail", "anim": "fidget", "pivot": [178, 165], "region": [205, 160, 30, 30], "amp": 12}
+    ]
+  },
+  "teddy-2": {
+    "eyes": [[82, 66, 9, 10], [128, 61, 9, 10]],
+    "parts": [
+      {"kind": "arm", "anim": "punch", "pivot": [106, 130], "region": [66, 155, 44, 46], "amp": 0, "punch": [-12, -6]},
+      {"kind": "arm", "anim": "punch", "pivot": [140, 130], "region": [176, 150, 42, 44], "amp": 0, "punch": [-12, -6], "phase": 0.5}
+    ]
+  },
+  "teddy-3": {
+    "eyes": [[87, 84, 6, 7], [114, 77, 7, 8]],
+    "parts": [
+      {"kind": "arm", "anim": "punch", "pivot": [156, 150], "region": [200, 166, 50, 68], "amp": -8, "punch": [-8, -6]}
+    ]
+  }
+}

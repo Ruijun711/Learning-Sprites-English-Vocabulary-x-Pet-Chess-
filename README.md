@@ -49,12 +49,19 @@ leveling_pet/
 │  └─ 05-考據與量化.md       文獻整理與實驗設計
 ├─ app/                      程式
 │  └─ learning-spirit.html   簡易版原型（單一檔案，直接用瀏覽器開啟）
+├─ desktop/main.py           桌面測試版（PySide6）：寵物在 Windows 桌面上走動，雙擊「啟動學習精靈.bat」開啟
 ├─ art/                      精靈美術（12 種 × 3 階段，全部原創）
 │  ├─ spirits/               精靈去背 PNG（統一檔名、256×256），原型和圖鑑使用這一份
+│  │  ├─ rig.json            每隻精靈的部位標記（眼睛、尾巴、耳朵、翅膀、手、殼），產生動作圖用
+│  │  └─ frames/             桌面寵物動作圖（tools/make_frames.py 產生）：走路、眨眼、睡覺、開心、暈、
+│  │                         擺尾巴／耳朵、拍翅膀、出拳、縮進殼裡
+│  ├─ logo.png / logo.ico    App logo（由 tools/make_logo.py 產生）
 │  └─ sprite-gallery.html    精靈圖鑑（用瀏覽器開啟）
 ├─ tools/                    工具腳本
 │  ├─ generate_sentences.py  用本機開源模型（Ollama）產生例句
-│  └─ sample_words.csv       原型的 60 字，可用來試模型
+│  ├─ sample_words.csv       原型的 60 字，可用來試模型
+│  ├─ make_frames.py         從精靈圖＋rig.json 產生桌面寵物動作圖（換了精靈圖或改了 rig.json 後重跑）
+│  └─ make_logo.py           產生 logo
 └─ screenshots/              原型畫面截圖
 ```
 
